@@ -24,5 +24,10 @@ Thumbs.db
 # Data (local fallback storage)
 data/alerts/
 
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
 # Docker
 *.log
