@@ -96,14 +96,7 @@ flowchart TD
   ```
 - **S3 State Mirroring:** State transitions update the `status` and append `resolved_at` timestamps in both memory and S3.
 
-### 4. 🎨 NEXUS-Inspired War Room Console & Project Manifesto
-- Replicated from the signature **NEXUS Cyber Warfare** design system:
-  - **Typography:** Space Grotesk (headers & KPI metrics) + Inter (body readability).
-  - **Glassmorphism:** Ambient holographic floating orbs with subtle blueprint mesh background.
-  - **Auto-Sync:** Real-time background polling every 10 seconds (`Live • Auto-Sync Active`) with zero manual page reloads.
-  - **Project Manifesto View:** Interactive tab navigation highlighting system architecture, data flow, and telemetry lifecycle.
-
-### 5. 🏗️ Infrastructure as Code (Terraform)
+### 4. 🏗️ Infrastructure as Code (Terraform)
 - Complete, modular Terraform configurations located in `/terraform`:
   - EC2 instance (`t3.micro`, Amazon Linux 2023).
   - Security Groups with port-level CIDR restrictions (SSH 22, HTTP 80, HTTPS 443).
@@ -111,7 +104,7 @@ flowchart TD
   - IAM role, trust policy, and instance profile.
   - CloudWatch metric alarms for high CPU utilization (>80%) and EC2 status check failures.
 
-### 6. 🔄 CI/CD Pipeline (GitHub Actions)
+### 5. 🔄 CI/CD Pipeline (GitHub Actions)
 - Automated workflow (`.github/workflows/ci.yml`) runs on every push and pull request across Python 3.11 and 3.12 matrices.
 - Runs Pytest unit tests with coverage reporting.
 - On merge to `master`/`main`, automatically SSHs into the live EC2 host to pull the update, rebuild the Docker image, and restart the container with zero manual intervention.
