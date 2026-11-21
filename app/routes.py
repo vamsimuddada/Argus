@@ -67,6 +67,7 @@ def dashboard():
 @api.route("/alerts", methods=["GET"])
 def list_alerts():
     """Return all alerts, newest first. Optional ?status= and ?severity= filters."""
+    _sync_from_storage()
     alerts_list = list(_alerts.values())
 
     # Filters
