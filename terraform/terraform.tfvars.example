@@ -1,0 +1,7 @@
+# Example Terraform Variable Values
+aws_region       = "ap-southeast-2"
+environment      = "production"
+instance_type    = "t3.micro"
+key_name         = "argus-key"
+bucket_name      = "argus-alerts-vamsi-2026"
+allowed_ssh_cidr = "0.0.0.0/0"

@@ -1,106 +1,89 @@
 # ARGUS — Alert Response & Guardian Unified System
 
-A lightweight alert ingestion and monitoring API built with Flask, designed for cloud deployment on AWS EC2 with S3 storage.
+ARGUS is a production-ready, cloud-native alert ingestion and monitoring platform deployed on AWS. Built with Flask, containerized with Docker, proxied with Nginx (SSL/TLS enabled via Let's Encrypt), and backed by Amazon S3 storage with AWS CloudWatch metric integration and Terraform Infrastructure as Code.
 
-## Features
+[![ARGUS CI/CD](https://github.com/vamsimuddada/Argus/actions/workflows/ci.yml/badge.svg)](https://github.com/vamsimuddada/Argus/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-- **REST API** — Create, list, acknowledge, resolve, and delete security alerts
-- **Dashboard** — Real-time web dashboard showing alert status and statistics
-- **S3 Integration** — Persists alert data to AWS S3 with local fallback storage
-- **Dockerized** — Production-ready container with Gunicorn WSGI server
-- **CI/CD** — GitHub Actions pipeline with automated testing and Docker image builds
-- **Nginx** — Reverse proxy configuration included
+## 🌐 Live Deployment
+- **Dashboard (HTTPS):** [https://3.25.134.199.nip.io/](https://3.25.134.199.nip.io/)
+- **Health Check:** `https://3.25.134.199.nip.io/health`
 
-## Quick Start
+---
 
-### Local Development
+## 🏛️ Architecture
+
+```mermaid
+flowchart LR
+    Client["Client / Browser"] -->|HTTPS :443| Nginx["Nginx Reverse Proxy\n(Let's Encrypt SSL)"]
+    Nginx -->|HTTP :5000| Docker["Docker Container\n(Gunicorn + Flask API)"]
+    Docker -->|IAM Role / boto3| S3["AWS S3 Bucket\n(argus-alerts-vamsi-2026)"]
+    Docker -->|IAM Role / boto3| CW["AWS CloudWatch\n(ARGUS/Security Metrics)"]
+```
+
+- **Compute:** AWS EC2 (`t3.micro`, Amazon Linux 2023)
+- **Containerization:** Docker multi-stage image with Gunicorn WSGI
+- **Web Server:** Nginx reverse proxy with automated Let's Encrypt SSL/TLS renewal (Certbot)
+- **Storage:** Amazon S3 bucket with IAM Instance Profile authentication (zero hardcoded secrets)
+- **Monitoring:** CloudWatch Metric Alarms (CPU > 80%, StatusCheckFailed) & custom application metrics
+- **Infrastructure as Code:** Complete Terraform module (`/terraform`) provisioning all AWS resources
+- **CI/CD:** GitHub Actions pipeline automating linting, testing, and continuous deployment
+
+---
+
+## 🚀 Key Features
+
+- **RESTful API:** Endpoints to ingest, filter, acknowledge, and resolve alerts.
+- **Persistent Cloud Storage:** Automated upload of alert payloads to S3 with local disk fallback.
+- **Enterprise Security:** HTTPS enforced, strict IAM role permissions, security groups restricted by protocol.
+- **Automated CI/CD:** GitHub Actions running unit test matrices and deploying to EC2 on push.
+- **Infrastructure as Code (IaC):** 100% reproducible deployment using Terraform.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Python 3.12, Flask, Pydantic, Gunicorn, Boto3
+- **Cloud & DevOps:** AWS (EC2, S3, IAM, CloudWatch), Docker, Nginx, Certbot
+- **IaC & Automation:** Terraform, GitHub Actions, Bash
+- **Testing:** Pytest (14/14 passing)
+
+---
+
+## 📦 Infrastructure as Code (Terraform)
+
+Provision the complete AWS infrastructure in a single command:
 
 ```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+See [terraform/README.md](terraform/README.md) for full configuration parameters and variable definitions.
+
+---
+
+## 🧪 Local Development & Testing
+
+```bash
+# Clone repository
+git clone https://github.com/vamsimuddada/Argus.git
+cd Argus
+
 # Create virtual environment
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # Linux/Mac
+source .venv/bin/activate  # Or .\.venv\Scripts\Activate.ps1 on Windows
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment file
-cp .env.example .env
-
-# Run the app
-flask --app app.main run --debug
-
-# Run tests
+# Run test suite
 pytest tests/ -v
 ```
 
-### Docker
+---
 
-```bash
-docker build -t argus .
-docker run -p 5000:5000 --env-file .env argus
-```
-
-### API Usage
-
-```bash
-# Health check
-curl http://localhost:5000/health
-
-# Create an alert
-curl -X POST http://localhost:5000/alerts \
-  -H "Content-Type: application/json" \
-  -d '{"title": "SSH brute force detected", "severity": "critical", "source": "ids"}'
-
-# List all alerts
-curl http://localhost:5000/alerts
-
-# Filter by severity
-curl http://localhost:5000/alerts?severity=critical
-
-# Acknowledge an alert
-curl -X POST http://localhost:5000/alerts/<alert_id>/acknowledge
-
-# Resolve an alert
-curl -X POST http://localhost:5000/alerts/<alert_id>/resolve
-
-# Delete an alert
-curl -X DELETE http://localhost:5000/alerts/<alert_id>
-```
-
-## Architecture
-
-```
-User → Nginx (:80) → Flask/Gunicorn (:5000) → S3 (alert storage)
-```
-
-## Project Structure
-
-```
-Argus/
-├── app/
-│   ├── __init__.py        # Package init
-│   ├── main.py            # Flask app factory + entry point
-│   ├── models.py          # Pydantic data models
-│   ├── routes.py          # API endpoints
-│   └── s3_client.py       # AWS S3 integration
-├── templates/
-│   └── dashboard.html     # Web dashboard
-├── tests/
-│   └── test_routes.py     # API tests
-├── .github/workflows/
-│   └── ci.yml             # CI/CD pipeline
-├── Dockerfile
-├── docker-compose.yml
-├── nginx.conf
-├── requirements.txt
-└── README.md
-```
-
-## Deployment
-
-See the deployment guide for instructions on deploying to AWS EC2 with Nginx reverse proxy and S3 storage.
-
-## License
-
-MIT
+## 📄 License
+MIT License. Created by Vamsi Muddada.

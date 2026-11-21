@@ -8,6 +8,7 @@ from flask import Blueprint, jsonify, request, render_template
 
 from .models import Alert, AlertCreate, AlertStatus, Severity
 from .s3_client import upload_alert, get_alert_from_s3
+from .cloudwatch import publish_alert_metric
 
 api = Blueprint("api", __name__)
 
@@ -105,9 +106,13 @@ def create_alert():
     # Persist to S3 (or local fallback)
     storage_info = upload_alert(alert.model_dump())
 
+    # Publish CloudWatch custom metric
+    cw_published = publish_alert_metric(alert.severity.value, alert.source)
+
     return jsonify({
         "alert": alert.model_dump(),
         "storage": storage_info,
+        "cloudwatch": {"metric_sent": cw_published},
     }), 201
 
 
