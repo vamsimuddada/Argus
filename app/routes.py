@@ -7,13 +7,29 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request, render_template
 
 from .models import Alert, AlertCreate, AlertStatus, Severity
-from .s3_client import upload_alert, get_alert_from_s3
+from .s3_client import upload_alert, get_alert_from_s3, list_alerts_s3
 from .cloudwatch import publish_alert_metric
 
 api = Blueprint("api", __name__)
 
-# ── In-memory store (replaced by a DB in production) ────────────────────
+# ── In-memory store (backed by S3) ─────────────────────────────────────
 _alerts: dict[str, Alert] = {}
+
+
+def _sync_from_storage() -> None:
+    """Hydrate in-memory store from S3 (or local disk fallback)."""
+    try:
+        alert_ids = list_alerts_s3(max_keys=50)
+        for aid in alert_ids:
+            if aid not in _alerts:
+                data = get_alert_from_s3(aid)
+                if data and "id" in data:
+                    try:
+                        _alerts[data["id"]] = Alert(**data)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
 
 
 def _clear_alerts() -> None:
@@ -32,6 +48,7 @@ def health():
 @api.route("/", methods=["GET"])
 def dashboard():
     """Render the alert dashboard."""
+    _sync_from_storage()
     alerts_list = sorted(
         _alerts.values(),
         key=lambda a: a.created_at,
@@ -120,20 +137,26 @@ def create_alert():
 @api.route("/alerts/<alert_id>/acknowledge", methods=["POST"])
 def acknowledge_alert(alert_id: str):
     """Acknowledge an alert."""
+    if alert_id not in _alerts:
+        _sync_from_storage()
     alert = _alerts.get(alert_id)
     if not alert:
         return jsonify({"error": "Alert not found"}), 404
     alert.acknowledge()
+    upload_alert(alert.model_dump())
     return jsonify(alert.model_dump()), 200
 
 
 @api.route("/alerts/<alert_id>/resolve", methods=["POST"])
 def resolve_alert(alert_id: str):
     """Resolve an alert."""
+    if alert_id not in _alerts:
+        _sync_from_storage()
     alert = _alerts.get(alert_id)
     if not alert:
         return jsonify({"error": "Alert not found"}), 404
     alert.resolve()
+    upload_alert(alert.model_dump())
     return jsonify(alert.model_dump()), 200
 
 
