@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  argus:
+    build: .
+    container_name: argus-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - alert-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  alert-data:
