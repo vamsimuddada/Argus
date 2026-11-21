@@ -104,6 +104,9 @@
             font-weight: 600;
             margin-bottom: 1rem;
             color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         table {
@@ -130,6 +133,7 @@
             padding: 0.875rem 1rem;
             border-bottom: 1px solid var(--border);
             font-size: 0.875rem;
+            vertical-align: middle;
         }
 
         tr:last-child td { border-bottom: none; }
@@ -153,6 +157,33 @@
         .badge-open { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
         .badge-acknowledged { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
         .badge-resolved { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 0.3rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-action:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-action.resolve {
+            border-color: rgba(34, 197, 94, 0.4);
+            color: var(--green);
+        }
+
+        .btn-action.resolve:hover {
+            background: rgba(34, 197, 94, 0.15);
+        }
 
         .empty-state {
             text-align: center;
@@ -192,25 +223,28 @@
     <div class="stats">
         <div class="stat-card">
             <div class="label">Total Alerts</div>
-            <div class="value">{{ stats.total }}</div>
+            <div class="value" id="count-total">{{ stats.total }}</div>
         </div>
         <div class="stat-card open">
             <div class="label">Open</div>
-            <div class="value">{{ stats.open }}</div>
+            <div class="value" id="count-open">{{ stats.open }}</div>
         </div>
         <div class="stat-card critical">
             <div class="label">Critical</div>
-            <div class="value">{{ stats.critical }}</div>
+            <div class="value" id="count-critical">{{ stats.critical }}</div>
         </div>
         <div class="stat-card resolved">
             <div class="label">Resolved</div>
-            <div class="value">{{ stats.resolved }}</div>
+            <div class="value" id="count-resolved">{{ stats.resolved }}</div>
         </div>
     </div>
 
     <div class="container">
         {% if alerts %}
-        <div class="section-title">Recent Alerts</div>
+        <div class="section-title">
+            <span>Recent Alerts</span>
+            <button class="btn-action" onclick="window.location.reload()">⟳ Refresh</button>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -220,17 +254,28 @@
                     <th>Status</th>
                     <th>Source</th>
                     <th>Created</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for alert in alerts %}
-                <tr>
+                <tr id="row-{{ alert.id }}">
                     <td><code>{{ alert.id }}</code></td>
                     <td>{{ alert.title }}</td>
                     <td><span class="badge badge-{{ alert.severity.value }}">{{ alert.severity.value }}</span></td>
-                    <td><span class="badge badge-{{ alert.status.value }}">{{ alert.status.value }}</span></td>
+                    <td><span class="badge badge-{{ alert.status.value }}" id="badge-{{ alert.id }}">{{ alert.status.value }}</span></td>
                     <td>{{ alert.source }}</td>
                     <td>{{ alert.created_at[:19] }}</td>
+                    <td id="actions-{{ alert.id }}">
+                        {% if alert.status.value == 'open' %}
+                        <button class="btn-action" onclick="ackAlert('{{ alert.id }}')">Acknowledge</button>
+                        <button class="btn-action resolve" onclick="resolveAlert('{{ alert.id }}')">Resolve</button>
+                        {% elif alert.status.value == 'acknowledged' %}
+                        <button class="btn-action resolve" onclick="resolveAlert('{{ alert.id }}')">Resolve</button>
+                        {% else %}
+                        <span style="color: var(--green); font-size: 0.75rem; font-weight: 600;">✓ Resolved</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -248,5 +293,53 @@
     <div class="footer">
         ARGUS v0.1.0 — Alert Response &amp; Guardian Unified System
     </div>
+
+    <script>
+        async function resolveAlert(id) {
+            const btn = event.target;
+            btn.disabled = true;
+            try {
+                const res = await fetch('/alerts/' + id + '/resolve', { method: 'POST' });
+                if (res.ok) {
+                    const badge = document.getElementById('badge-' + id);
+                    if (badge) {
+                        badge.className = 'badge badge-resolved';
+                        badge.innerText = 'resolved';
+                    }
+                    const cell = document.getElementById('actions-' + id);
+                    if (cell) {
+                        cell.innerHTML = '<span style="color: var(--green); font-size: 0.75rem; font-weight: 600;">✓ Resolved</span>';
+                    }
+                    const openEl = document.getElementById('count-open');
+                    const resEl = document.getElementById('count-resolved');
+                    if (openEl && parseInt(openEl.innerText) > 0) openEl.innerText = parseInt(openEl.innerText) - 1;
+                    if (resEl) resEl.innerText = parseInt(resEl.innerText) + 1;
+                }
+            } catch(e) {
+                btn.disabled = false;
+            }
+        }
+
+        async function ackAlert(id) {
+            const btn = event.target;
+            btn.disabled = true;
+            try {
+                const res = await fetch('/alerts/' + id + '/acknowledge', { method: 'POST' });
+                if (res.ok) {
+                    const badge = document.getElementById('badge-' + id);
+                    if (badge) {
+                        badge.className = 'badge badge-acknowledged';
+                        badge.innerText = 'acknowledged';
+                    }
+                    const cell = document.getElementById('actions-' + id);
+                    if (cell) {
+                        cell.innerHTML = '<button class="btn-action resolve" onclick="resolveAlert(\'' + id + '\')">Resolve</button>';
+                    }
+                }
+            } catch(e) {
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
