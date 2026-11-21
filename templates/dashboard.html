@@ -3,1006 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARGUS Command Center — Cloud Incident &amp; Operations Console</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>ARGUS — Alert Dashboard</title>
     <style>
         :root {
-            --bg-canvas: #070b14;
-            --bg-sidebar: #111827;
-            --bg-card: #111827;
-            --bg-card-header: rgba(0, 210, 255, 0.05);
-            --bg-table-header: #0f172a;
-            --border-color: #1e293b;
-            --border-hover: #334155;
-            --accent-cyan: #00d2ff;
-            --accent-cyan-glow: rgba(0, 210, 255, 0.15);
-            --text-main: #e2e8f0;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
             --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --status-green: #10b981;
-            --status-yellow: #f59e0b;
-            --status-red: #ef4444;
-            --status-orange: #f97316;
-            --status-purple: #8b5cf6;
+            --accent: #3b82f6;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --orange: #f97316;
+            --red: #ef4444;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-canvas);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            overflow-x: hidden;
-        }
-
-        /* ── LAYOUT & SIDEBAR ── */
-        .layout-container {
-            display: flex;
-            width: 100vw;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
         }
 
-        .sidebar {
-            width: 270px;
-            background-color: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 24px 20px;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 100;
-        }
-
-        .main-wrapper {
-            margin-left: 270px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            background-color: var(--bg-canvas);
-        }
-
-        /* ── BRANDING ── */
-        .brand-section {
-            margin-bottom: 24px;
-        }
-
-        .brand-title {
-            color: var(--accent-cyan);
-            font-size: 1.85rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 2rem;
             display: flex;
             align-items: center;
-            gap: 8px;
-            text-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+            justify-content: space-between;
         }
 
-        .brand-subtitle {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 2px;
-            font-weight: 600;
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
         }
 
-        .divider {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 16px 0;
+        .header h1 span { color: var(--accent); }
+
+        .header .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--green);
+            font-size: 0.875rem;
         }
 
-        /* ── SIDEBAR CONTROLS ── */
-        .control-group {
-            margin-bottom: 18px;
+        .header .status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        .control-label {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+        }
+
+        .stat-card .label {
             font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: var(--text-muted);
-            font-weight: 700;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .control-select {
-            width: 100%;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-family: inherit;
-            outline: none;
-        }
-
-        .control-select:focus {
-            border-color: var(--accent-cyan);
-        }
-
-        .btn-nexus {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .btn-nexus-primary {
-            background: linear-gradient(135deg, #0284c7, #00d2ff);
-            border: none;
-            color: #070b14;
-            box-shadow: 0 4px 12px rgba(0, 210, 255, 0.25);
-        }
-
-        .btn-nexus-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 210, 255, 0.4);
-        }
-
-        .btn-nexus-secondary {
-            background: transparent;
-            border: 1px solid #334155;
-            color: var(--text-muted);
-        }
-
-        .btn-nexus-secondary:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            background: var(--accent-cyan-glow);
-        }
-
-        /* ── SYSTEM TELEMETRY BOX (SIDEBAR) ── */
-        .telemetry-box {
-            background-color: #0f172a;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 14px;
-            margin-top: 10px;
-        }
-
-        .telemetry-title {
-            color: var(--accent-cyan);
-            font-weight: 700;
-            font-size: 0.82rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .metric-row {
-            margin-bottom: 10px;
-        }
-
-        .metric-row-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
             color: var(--text-muted);
-            margin-bottom: 4px;
+            margin-bottom: 0.5rem;
         }
 
-        .progress-bar-bg {
-            background-color: #1e293b;
-            height: 5px;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #0284c7, #00d2ff);
-            border-radius: 9999px;
-            transition: width 0.3s ease;
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding-top: 16px;
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            text-align: center;
-            border-top: 1px solid var(--border-color);
-        }
-
-        /* ── TOP HEADER NAV ── */
-        .header-nav {
-            padding: 18px 32px;
-            background-color: var(--bg-canvas);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 40;
-            backdrop-filter: blur(10px);
-        }
-
-        .header-title {
-            font-size: 1.25rem;
+        .stat-card .value {
+            font-size: 2rem;
             font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.01em;
         }
 
-        .header-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
+        .stat-card.critical .value { color: var(--red); }
+        .stat-card.open .value { color: var(--yellow); }
+        .stat-card.resolved .value { color: var(--green); }
 
-        .header-badges {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .container { padding: 0 2rem 2rem; }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background-color: rgba(16, 185, 129, 0.15);
-            color: var(--status-green);
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            letter-spacing: 0.02em;
-        }
-
-        .status-badge::before {
-            content: '';
-            width: 7px;
-            height: 7px;
-            background-color: var(--status-green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--status-green);
-            animation: pulse-dot 2s infinite;
-        }
-
-        .status-badge-blue {
-            background-color: rgba(0, 210, 255, 0.1);
-            color: var(--accent-cyan);
-            border: 1px solid rgba(0, 210, 255, 0.3);
-        }
-
-        .status-badge-blue::before {
-            background-color: var(--accent-cyan);
-            box-shadow: 0 0 8px var(--accent-cyan);
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.85); }
-        }
-
-        /* ── MAIN CONTENT AREA ── */
-        .content-area {
-            padding: 24px 32px 48px;
-        }
-
-        /* ── KPI CARDS ROW (NEXUS STYLE: BORDER-LEFT 3PX SOLID #00D2FF) ── */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 14px;
-            margin-bottom: 24px;
-        }
-
-        @media (max-width: 1400px) {
-            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 900px) {
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .kpi-card {
-            background-color: var(--bg-card);
-            border: none;
-            border-left: 3px solid var(--accent-cyan);
-            border-radius: 6px;
-            padding: 16px 18px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 210, 255, 0.15);
-        }
-
-        .kpi-card.critical {
-            border-left-color: var(--status-red);
-        }
-
-        .kpi-card.critical .metric-value {
-            color: var(--status-red);
-        }
-
-        .kpi-card.open {
-            border-left-color: var(--status-yellow);
-        }
-
-        .kpi-card.open .metric-value {
-            color: var(--status-yellow);
-        }
-
-        .kpi-card.resolved {
-            border-left-color: var(--status-green);
-        }
-
-        .kpi-card.resolved .metric-value {
-            color: var(--status-green);
-        }
-
-        .metric-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .metric-value {
-            font-size: 2.1rem;
-            font-weight: 800;
-            color: var(--accent-cyan);
-            line-height: 1.1;
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* ── TABS NAVIGATION (NEXUS DARKLY STYLE) ── */
-        .tabs-nav {
-            display: flex;
-            gap: 8px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid transparent;
-            color: var(--text-muted);
-            font-size: 0.9rem;
+        .section-title {
+            font-size: 1.125rem;
             font-weight: 600;
-            padding: 10px 18px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        .tab-btn:hover {
-            color: var(--text-main);
-        }
-
-        .tab-btn.active {
-            background-color: var(--bg-card) !important;
-            color: var(--accent-cyan) !important;
-            border-bottom: 2px solid var(--accent-cyan) !important;
-            border-radius: 4px 4px 0 0;
-        }
-
-        .tab-pane {
-            display: none;
-        }
-
-        .tab-pane.active {
-            display: block;
-        }
-
-        /* ── PANELS & CARDS (NEXUS DASHBOARD STYLE) ── */
-        .nexus-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-
-        .nexus-card-header {
-            background-color: var(--bg-card-header);
-            color: var(--accent-cyan);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.85rem;
-            padding: 14px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .nexus-card-body {
-            padding: 20px;
-        }
-
-        /* ── TABLE STYLING (NEXUS DATA TABLE) ── */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
+            margin-bottom: 1rem;
+            color: var(--text-muted);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            text-align: left;
+            background: var(--surface);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
 
         th {
-            background-color: var(--bg-table-header);
-            color: var(--accent-cyan);
-            font-weight: 700;
+            background: rgba(59, 130, 246, 0.1);
+            text-align: left;
+            padding: 0.875rem 1rem;
             font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
         }
 
         td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.85rem;
-            color: var(--text-main);
-            vertical-align: middle;
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
         }
 
         tr:last-child td { border-bottom: none; }
-        tr:hover td { background-color: rgba(0, 210, 255, 0.03); }
+        tr:hover { background: rgba(59, 130, 246, 0.05); }
 
-        .code-pill {
-            font-family: 'JetBrains Mono', ui-monospace, monospace;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            color: var(--accent-cyan);
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-size: 0.78rem;
-        }
-
-        /* ── SEVERITY & STATUS BADGES ── */
-        .pill-badge {
+        .badge {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .pill-critical { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
-        .pill-high { background: rgba(249, 115, 22, 0.2); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.4); }
-        .pill-medium { background: rgba(245, 158, 11, 0.2); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.4); }
-        .pill-low { background: rgba(16, 185, 129, 0.2); color: #86efac; border: 1px solid rgba(16, 185, 129, 0.4); }
-
-        .pill-open { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.5); }
-        .pill-acknowledged { background: rgba(0, 210, 255, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 210, 255, 0.5); }
-        .pill-resolved { background: rgba(16, 185, 129, 0.15); color: var(--status-green); border: 1px solid rgba(16, 185, 129, 0.5); }
-
-        /* ── INTERACTIVE ACTION BUTTONS ── */
-        .action-btn-sm {
-            background-color: transparent;
-            border: 1px solid #334155;
-            color: var(--text-muted);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-family: inherit;
-            margin-right: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .action-btn-sm:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            background: var(--accent-cyan-glow);
-        }
+        .badge-critical { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+        .badge-high { background: rgba(249, 115, 22, 0.15); color: var(--orange); }
+        .badge-medium { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+        .badge-low { background: rgba(34, 197, 94, 0.15); color: var(--green); }
 
-        .action-btn-sm.resolve {
-            border-color: rgba(16, 185, 129, 0.4);
-            color: #86efac;
-        }
+        .badge-open { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+        .badge-acknowledged { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
+        .badge-resolved { background: rgba(34, 197, 94, 0.15); color: var(--green); }
 
-        .action-btn-sm.resolve:hover {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: var(--status-green);
-            color: var(--status-green);
-        }
-
-        /* ── ARCHITECTURE TOPOLOGY GRID ── */
-        .topo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-        }
-
-        .topo-box {
-            background-color: #0f172a;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 16px;
-            position: relative;
-        }
-
-        .topo-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3px;
-            height: 100%;
-            background-color: var(--accent-cyan);
-            border-radius: 6px 0 0 6px;
-        }
-
-        .topo-title {
-            color: var(--text-main);
-            font-size: 0.95rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .topo-desc {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        .empty-placeholder {
+        .empty-state {
             text-align: center;
-            padding: 48px;
-            color: var(--text-dim);
-            font-size: 0.9rem;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state code {
+            display: block;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            white-space: pre;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
         }
     </style>
 </head>
 <body>
-    <div class="layout-container">
-        <!-- ── SIDEBAR CONTROL PANEL (NEXUS BRANDING) ── -->
-        <aside class="sidebar">
-            <div class="brand-section">
-                <div class="brand-title">🛡️ ARGUS</div>
-                <div class="brand-subtitle">Cloud Ops Command Center</div>
-            </div>
-
-            <hr class="divider">
-
-            <div class="control-group">
-                <label class="control-label">Cloud Environment</label>
-                <select class="control-select">
-                    <option value="ap-southeast-2">AWS ap-southeast-2 (Sydney)</option>
-                    <option value="us-east-1">AWS us-east-1 (N. Virginia)</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Architecture Runtime</label>
-                <select class="control-select">
-                    <option value="ec2-docker">EC2 + Docker + Nginx SSL</option>
-                    <option value="terraform">Terraform IaC Profile</option>
-                </select>
-            </div>
-
-            <button class="btn-nexus btn-nexus-primary" onclick="simulateIncident()">
-                ▶ Trigger Test Incident
-            </button>
-            <button class="btn-nexus btn-nexus-secondary" onclick="window.location.reload()">
-                ⟳ Refresh Telemetry
-            </button>
-
-            <!-- Real-time Host Telemetry Widget (NEXUS Style) -->
-            <div class="telemetry-box">
-                <div class="telemetry-title">
-                    <span>Host Telemetry</span>
-                    <span style="font-size: 0.7rem; color: var(--status-green);">LIVE</span>
-                </div>
-
-                <div class="metric-row">
-                    <div class="metric-row-header">
-                        <span>Root Disk Usage</span>
-                        <span>27.8%</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: 27.8%;"></div>
-                    </div>
-                </div>
-
-                <div class="metric-row">
-                    <div class="metric-row-header">
-                        <span>Memory Saturation</span>
-                        <span>18.4%</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: 18.4%;"></div>
-                    </div>
-                </div>
-
-                <div class="metric-row" style="margin-bottom: 0;">
-                    <div class="metric-row-header">
-                        <span>CPU Utilization</span>
-                        <span>2.1%</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: 2.1%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-footer">
-                <div>AWS Free Tier Architecture</div>
-                <div style="color: var(--accent-cyan); margin-top: 2px;">Vamsi Muddada &bull; NEXUS &amp; ARGUS</div>
-            </div>
-        </aside>
-
-        <!-- ── MAIN COMMAND CENTER CONTENT ── -->
-        <main class="main-wrapper">
-            <!-- Top Header Navigation -->
-            <header class="header-nav">
-                <div>
-                    <h2 class="header-title">Autonomous Cloud Defense &amp; Incident Operations Console</h2>
-                    <div class="header-subtitle">Amazon Linux 2023 &bull; Nginx TLS 1.3 Reverse Proxy &bull; S3 Object Storage &bull; Systemd 24/7 Monitor</div>
-                </div>
-                <div class="header-badges">
-                    <div class="status-badge">EC2: RUNNING (t3.micro)</div>
-                    <div class="status-badge status-badge-blue">SSL: VERIFIED (Let's Encrypt)</div>
-                </div>
-            </header>
-
-            <div class="content-area">
-                <!-- ── 6 KPI METRIC CARDS (NEXUS DASHBOARD STYLE) ── -->
-                <section class="kpi-grid">
-                    <div class="kpi-card">
-                        <div class="metric-label">Total Incidents</div>
-                        <div class="metric-value" id="kpi-total">{{ stats.total }}</div>
-                    </div>
-
-                    <div class="kpi-card open">
-                        <div class="metric-label">Open Alerts</div>
-                        <div class="metric-value" id="kpi-open">{{ stats.open }}</div>
-                    </div>
-
-                    <div class="kpi-card critical">
-                        <div class="metric-label">Critical Severity</div>
-                        <div class="metric-value" id="kpi-critical">{{ stats.critical }}</div>
-                    </div>
-
-                    <div class="kpi-card resolved">
-                        <div class="metric-label">Resolved</div>
-                        <div class="metric-value" id="kpi-resolved">{{ stats.resolved }}</div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="metric-label">S3 Persistence</div>
-                        <div class="metric-value" style="font-size: 1.35rem; color: #38bdf8; margin-top: 6px;">SYNCED</div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="metric-label">Daemon Polling</div>
-                        <div class="metric-value" style="font-size: 1.35rem; color: #10b981; margin-top: 6px;">60s LOOP</div>
-                    </div>
-                </section>
-
-                <!-- ── TABS NAVIGATION ── -->
-                <nav class="tabs-nav">
-                    <button class="tab-btn active" onclick="switchTab(event, 'tab-command')">Command Center</button>
-                    <button class="tab-btn" onclick="switchTab(event, 'tab-topology')">Cloud Topology</button>
-                    <button class="tab-btn" onclick="switchTab(event, 'tab-daemon')">Systemd Daemon</button>
-                    <button class="tab-btn" onclick="switchTab(event, 'tab-iac')">Terraform IaC</button>
-                </nav>
-
-                <!-- ── TAB 1: COMMAND CENTER (TABLE OF INCIDENTS) ── -->
-                <div id="tab-command" class="tab-pane active">
-                    <div class="nexus-card">
-                        <div class="nexus-card-header">
-                            <span>Active Security Events &amp; Infrastructure Telemetry</span>
-                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Backed by Amazon S3: <code>argus-alerts-vamsi-2026</code></span>
-                        </div>
-                        <div class="table-responsive">
-                            {% if alerts %}
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Alert ID</th>
-                                        <th>Incident Title</th>
-                                        <th>Severity</th>
-                                        <th>Status</th>
-                                        <th>Source Engine</th>
-                                        <th>Timestamp (UTC)</th>
-                                        <th>Incident Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for alert in alerts %}
-                                    <tr id="row-{{ alert.id }}">
-                                        <td><span class="code-pill">{{ alert.id }}</span></td>
-                                        <td>
-                                            <div style="font-weight: 600; color: #fff;">{{ alert.title }}</div>
-                                            {% if alert.description %}
-                                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">{{ alert.description }}</div>
-                                            {% endif %}
-                                        </td>
-                                        <td><span class="pill-badge pill-{{ alert.severity.value }}">{{ alert.severity.value }}</span></td>
-                                        <td><span class="pill-badge pill-{{ alert.status.value }}" id="badge-{{ alert.id }}">{{ alert.status.value }}</span></td>
-                                        <td><span class="code-pill" style="color: #94a3b8;">{{ alert.source }}</span></td>
-                                        <td>{{ alert.created_at[:19].replace('T', ' ') }}</td>
-                                        <td id="actions-{{ alert.id }}">
-                                            {% if alert.status.value == 'open' %}
-                                            <button class="action-btn-sm" onclick="ackAlert('{{ alert.id }}')">Acknowledge</button>
-                                            <button class="action-btn-sm resolve" onclick="resAlert('{{ alert.id }}')">Resolve</button>
-                                            {% elif alert.status.value == 'acknowledged' %}
-                                            <button class="action-btn-sm resolve" onclick="resAlert('{{ alert.id }}')">Resolve</button>
-                                            {% else %}
-                                            <span style="color: var(--status-green); font-size: 0.8rem; font-weight: 700;">✓ RESOLVED</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                            {% else %}
-                            <div class="empty-placeholder">
-                                No security incidents currently recorded. All system sensors reports normal.
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── TAB 2: CLOUD TOPOLOGY ── -->
-                <div id="tab-topology" class="tab-pane">
-                    <div class="nexus-card">
-                        <div class="nexus-card-header">
-                            <span>AWS Production Surface &amp; Network Architecture</span>
-                        </div>
-                        <div class="nexus-card-body">
-                            <div class="topo-grid">
-                                <div class="topo-box">
-                                    <div class="topo-title">
-                                        <span>1. Ingress &amp; Reverse Proxy</span>
-                                        <span class="pill-badge pill-low">PORT 443 / 80</span>
-                                    </div>
-                                    <div class="topo-desc">
-                                        Nginx web server terminating TLS 1.3 with automated Let's Encrypt certificates (Certbot). Forwards internal traffic to Gunicorn on port 5000.
-                                    </div>
-                                </div>
-
-                                <div class="topo-box">
-                                    <div class="topo-title">
-                                        <span>2. Compute &amp; Containerization</span>
-                                        <span class="pill-badge pill-acknowledged">DOCKER</span>
-                                    </div>
-                                    <div class="topo-desc">
-                                        AWS EC2 <code>t3.micro</code> running Amazon Linux 2023. Containerized Python 3.12 Flask API served with multi-worker Gunicorn WSGI.
-                                    </div>
-                                </div>
-
-                                <div class="topo-box">
-                                    <div class="topo-title">
-                                        <span>3. Persistent Storage Pool</span>
-                                        <span class="pill-badge pill-open">AMAZON S3</span>
-                                    </div>
-                                    <div class="topo-desc">
-                                        Incident payloads stream directly to <code>s3://argus-alerts-vamsi-2026/alerts/</code> authenticated via IAM Instance Role (zero credential leaks).
-                                    </div>
-                                </div>
-
-                                <div class="topo-box">
-                                    <div class="topo-title">
-                                        <span>4. Telemetry Daemon</span>
-                                        <span class="pill-badge pill-low">SYSTEMD</span>
-                                    </div>
-                                    <div class="topo-desc">
-                                        Autonomous Python service <code>monitor.service</code> evaluating disk usage, CPU saturation, and <code>sshd</code> authentication anomalies every 60s.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── TAB 3: SYSTEMD DAEMON MONITOR ── -->
-                <div id="tab-daemon" class="tab-pane">
-                    <div class="nexus-card">
-                        <div class="nexus-card-header">
-                            <span>Active Systemd Daemon Configuration &bull; <code>monitor.service</code></span>
-                        </div>
-                        <div class="nexus-card-body">
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
-                                The host telemetry daemon runs autonomously 24/7 on the EC2 operating system, collecting hardware metrics and parsing kernel/auth logs:
-                            </p>
-                            <div style="background-color: #0f172a; padding: 16px; border-radius: 6px; border: 1px solid var(--border-color); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.6; color: #a5f3fc;">
-                                <div><span style="color: #f59e0b;">●</span> <strong>monitor.service</strong> - ARGUS 24/7 Host Health &amp; Security Telemetry Daemon</div>
-                                <div style="color: var(--text-muted);">&nbsp;&nbsp;Loaded: loaded (/etc/systemd/system/monitor.service; enabled; preset: disabled)</div>
-                                <div style="color: var(--status-green);">&nbsp;&nbsp;Active: active (running) via systemd</div>
-                                <div style="color: var(--text-muted);">&nbsp;&nbsp;Loop: Continuous 60s polling interval</div>
-                                <div style="color: var(--text-muted);">&nbsp;&nbsp;Sensors: [Disk Capacity &bull; Memory Pressure &bull; CPU Average &bull; SSH Log Watcher]</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── TAB 4: TERRAFORM IAC ── -->
-                <div id="tab-iac" class="tab-pane">
-                    <div class="nexus-card">
-                        <div class="nexus-card-header">
-                            <span>Infrastructure as Code (Terraform)</span>
-                            <a href="https://github.com/vamsimuddada/Argus/tree/master/terraform" target="_blank" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.8rem;">View on GitHub ↗</a>
-                        </div>
-                        <div class="nexus-card-body">
-                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
-                                The entire AWS cloud footprint is codifed under <code>Argus/terraform/main.tf</code>:
-                            </p>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-                                <div style="background: #0f172a; padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
-                                    <div style="color: var(--accent-cyan); font-weight: 700; font-size: 0.8rem; margin-bottom: 6px;">PROVISIONED RESOURCES</div>
-                                    <ul style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.7; padding-left: 20px;">
-                                        <li><code>aws_instance.argus_server</code> (t3.micro)</li>
-                                        <li><code>aws_security_group.argus_sg</code> (22, 80, 443)</li>
-                                        <li><code>aws_s3_bucket.alerts_bucket</code></li>
-                                        <li><code>aws_iam_role.argus_ec2_role</code></li>
-                                        <li><code>aws_cloudwatch_metric_alarm.high_cpu_alarm</code></li>
-                                    </ul>
-                                </div>
-                                <div style="background: #0f172a; padding: 14px; border-radius: 6px; border: 1px solid var(--border-color);">
-                                    <div style="color: var(--status-green); font-weight: 700; font-size: 0.8rem; margin-bottom: 6px;">QUICK EXECUTION</div>
-                                    <pre style="color: #a5f3fc; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.6;">cd terraform
-terraform init
-terraform plan
-terraform apply -auto-approve</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
+    <div class="header">
+        <h1><span>ARGUS</span> Alert Dashboard</h1>
+        <div class="status">System Online</div>
     </div>
 
-    <!-- ── JAVASCRIPT FOR TABS & ALERT RESOLUTION ── -->
-    <script>
-        function switchTab(evt, tabId) {
-            const tabs = document.querySelectorAll('.tab-btn');
-            tabs.forEach(t => t.classList.remove('active'));
+    <div class="stats">
+        <div class="stat-card">
+            <div class="label">Total Alerts</div>
+            <div class="value">{{ stats.total }}</div>
+        </div>
+        <div class="stat-card open">
+            <div class="label">Open</div>
+            <div class="value">{{ stats.open }}</div>
+        </div>
+        <div class="stat-card critical">
+            <div class="label">Critical</div>
+            <div class="value">{{ stats.critical }}</div>
+        </div>
+        <div class="stat-card resolved">
+            <div class="label">Resolved</div>
+            <div class="value">{{ stats.resolved }}</div>
+        </div>
+    </div>
 
-            const panes = document.querySelectorAll('.tab-pane');
-            panes.forEach(p => p.classList.remove('active'));
+    <div class="container">
+        {% if alerts %}
+        <div class="section-title">Recent Alerts</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Severity</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td><code>{{ alert.id }}</code></td>
+                    <td>{{ alert.title }}</td>
+                    <td><span class="badge badge-{{ alert.severity.value }}">{{ alert.severity.value }}</span></td>
+                    <td><span class="badge badge-{{ alert.status.value }}">{{ alert.status.value }}</span></td>
+                    <td>{{ alert.source }}</td>
+                    <td>{{ alert.created_at[:19] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No alerts yet. Create one with the API:</p>
+            <code>curl -X POST http://localhost:5000/alerts \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Test Alert", "severity": "high", "source": "curl"}'</code>
+        </div>
+        {% endif %}
+    </div>
 
-            evt.currentTarget.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-        }
-
-        async function simulateIncident() {
-            const titles = [
-                "Unusual Outbound Data Exfiltration Detected",
-                "Nginx High Error Rate Spike (5xx)",
-                "Failed Root Sudo Attempt Detected",
-                "Port Scan Anomaly Observed on Ingress"
-            ];
-            const randomTitle = titles[Math.floor(Math.random() * titles.length)];
-
-            try {
-                const res = await fetch('/alerts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title: randomTitle,
-                        description: "Telemetry sensor triggered from ARGUS Command Center UI simulator.",
-                        severity: "high",
-                        source: "command-center-ui"
-                    })
-                });
-                if (res.ok) {
-                    window.location.reload();
-                }
-            } catch (err) {
-                alert("Error triggering incident: " + err.message);
-            }
-        }
-
-        async function resAlert(alertId) {
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerText = 'Resolving...';
-
-            try {
-                const res = await fetch('/alerts/' + alertId + '/resolve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (res.ok) {
-                    const badge = document.getElementById('badge-' + alertId);
-                    if (badge) {
-                        badge.className = 'pill-badge pill-resolved';
-                        badge.innerText = 'resolved';
-                    }
-                    const actionCell = document.getElementById('actions-' + alertId);
-                    if (actionCell) {
-                        actionCell.innerHTML = '<span style="color: var(--status-green); font-size: 0.8rem; font-weight: 700;">✓ RESOLVED</span>';
-                    }
-                    const openElem = document.getElementById('kpi-open');
-                    const resElem = document.getElementById('kpi-resolved');
-                    if (openElem && parseInt(openElem.innerText) > 0) {
-                        openElem.innerText = parseInt(openElem.innerText) - 1;
-                    }
-                    if (resElem) {
-                        resElem.innerText = parseInt(resElem.innerText) + 1;
-                    }
-                } else {
-                    btn.disabled = false;
-                    btn.innerText = 'Resolve';
-                }
-            } catch (err) {
-                btn.disabled = false;
-                btn.innerText = 'Resolve';
-            }
-        }
-
-        async function ackAlert(alertId) {
-            const btn = event.target;
-            btn.disabled = true;
-
-            try {
-                const res = await fetch('/alerts/' + alertId + '/acknowledge', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (res.ok) {
-                    const badge = document.getElementById('badge-' + alertId);
-                    if (badge) {
-                        badge.className = 'pill-badge pill-acknowledged';
-                        badge.innerText = 'acknowledged';
-                    }
-                    const actionCell = document.getElementById('actions-' + alertId);
-                    if (actionCell) {
-                        actionCell.innerHTML = '<button class="action-btn-sm resolve" onclick="resAlert(\'' + alertId + '\')">Resolve</button>';
-                    }
-                } else {
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                btn.disabled = false;
-            }
-        }
-    </script>
+    <div class="footer">
+        ARGUS v0.1.0 — Alert Response &amp; Guardian Unified System
+    </div>
 </body>
 </html>
