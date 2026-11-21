@@ -18,6 +18,13 @@ _alerts: dict[str, Alert] = {}
 
 def _sync_from_storage() -> None:
     """Hydrate in-memory store from S3 (or local disk fallback)."""
+    from flask import current_app
+    try:
+        if current_app and current_app.config.get("TESTING"):
+            return
+    except Exception:
+        pass
+
     try:
         alert_ids = list_alerts_s3(max_keys=50)
         for aid in alert_ids:
