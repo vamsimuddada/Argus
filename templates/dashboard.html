@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARGUS — Alert Dashboard</title>
+    <title>ARGUS — Cloud Incident & Alert Operations Center</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <style>
         :root {
-            --bg: #0f172a;
+            --bg: #0b1120;
             --surface: #1e293b;
+            --surface-hover: #334155;
             --border: #334155;
-            --text: #e2e8f0;
+            --text: #f8fafc;
             --text-muted: #94a3b8;
-            --accent: #3b82f6;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
             --green: #22c55e;
-            --yellow: #eab308;
+            --yellow: #f59e0b;
             --orange: #f97316;
             --red: #ef4444;
         }
@@ -21,138 +24,212 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
         }
 
         .header {
-            background: var(--surface);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border);
-            padding: 1.25rem 2rem;
+            padding: 1.25rem 2.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
         .header h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
         }
 
         .header h1 span { color: var(--accent); }
 
-        .header .status {
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-pill {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
             color: var(--green);
-            font-size: 0.875rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        .header .status::before {
+        .status-pill::before {
             content: '';
             width: 8px;
             height: 8px;
             background: var(--green);
             border-radius: 50%;
+            box-shadow: 0 0 10px var(--green);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.9); }
         }
 
-        .stats {
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            padding: 1.5rem 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            padding: 2rem 2.5rem 1rem;
         }
 
         .stat-card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 0.75rem;
-            padding: 1.25rem;
+            padding: 1.25rem 1.5rem;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
         }
 
         .stat-card .label {
             font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
         }
 
         .stat-card .value {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1.1;
         }
 
-        .stat-card.critical .value { color: var(--red); }
         .stat-card.open .value { color: var(--yellow); }
+        .stat-card.critical .value { color: var(--red); }
         .stat-card.resolved .value { color: var(--green); }
+        .stat-card.total .value { color: var(--accent); }
 
-        .container { padding: 0 2rem 2rem; }
+        .container { padding: 1.5rem 2.5rem 3rem; }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
 
         .section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .table-wrapper {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: var(--surface);
-            border-radius: 0.75rem;
-            overflow: hidden;
-            border: 1px solid var(--border);
+            text-align: left;
         }
 
         th {
-            background: rgba(59, 130, 246, 0.1);
-            text-align: left;
-            padding: 0.875rem 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.9rem 1.2rem;
             font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             color: var(--text-muted);
             border-bottom: 1px solid var(--border);
         }
 
         td {
-            padding: 0.875rem 1rem;
+            padding: 1rem 1.2rem;
             border-bottom: 1px solid var(--border);
             font-size: 0.875rem;
+            vertical-align: middle;
         }
 
         tr:last-child td { border-bottom: none; }
-        tr:hover { background: rgba(59, 130, 246, 0.05); }
+        tr:hover td { background: rgba(56, 189, 248, 0.04); }
 
         .badge {
             display: inline-block;
-            padding: 0.2rem 0.6rem;
+            padding: 0.25rem 0.65rem;
             border-radius: 9999px;
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 0.72rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
         }
 
-        .badge-critical { background: rgba(239, 68, 68, 0.15); color: var(--red); }
-        .badge-high { background: rgba(249, 115, 22, 0.15); color: var(--orange); }
-        .badge-medium { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
-        .badge-low { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+        .badge-critical { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-high { background: rgba(249, 115, 22, 0.18); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge-medium { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-low { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3); }
 
-        .badge-open { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
-        .badge-acknowledged { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
-        .badge-resolved { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+        .badge-open { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+        .badge-acknowledged { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.4); }
+        .badge-resolved { background: rgba(34, 197, 94, 0.15); color: var(--green); border: 1px solid rgba(34, 197, 94, 0.4); }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-right: 0.35rem;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .action-btn.resolve {
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #86efac;
+        }
+
+        .action-btn.resolve:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         .empty-state {
             text-align: center;
@@ -160,93 +237,181 @@
             color: var(--text-muted);
         }
 
-        .empty-state code {
-            display: block;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            text-align: left;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            white-space: pre;
-        }
-
         .footer {
             text-align: center;
             padding: 2rem;
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.4);
+        }
+
+        .code-id {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            color: #38bdf8;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1><span>ARGUS</span> Alert Dashboard</h1>
-        <div class="status">System Online</div>
+        <h1>🛡️ <span>ARGUS</span> Cloud Incident Console</h1>
+        <div class="header-meta">
+            <div class="status-pill">Daemon Active: 24/7</div>
+        </div>
     </div>
 
-    <div class="stats">
-        <div class="stat-card">
-            <div class="label">Total Alerts</div>
-            <div class="value">{{ stats.total }}</div>
+    <div class="stats-grid">
+        <div class="stat-card total">
+            <div class="label">Total Incidents</div>
+            <div class="value" id="stat-total">{{ stats.total }}</div>
         </div>
         <div class="stat-card open">
-            <div class="label">Open</div>
-            <div class="value">{{ stats.open }}</div>
+            <div class="label">Open Alerts</div>
+            <div class="value" id="stat-open">{{ stats.open }}</div>
         </div>
         <div class="stat-card critical">
-            <div class="label">Critical</div>
-            <div class="value">{{ stats.critical }}</div>
+            <div class="label">Critical Severity</div>
+            <div class="value" id="stat-critical">{{ stats.critical }}</div>
         </div>
         <div class="stat-card resolved">
-            <div class="label">Resolved</div>
-            <div class="value">{{ stats.resolved }}</div>
+            <div class="label">Resolved Incidents</div>
+            <div class="value" id="stat-resolved">{{ stats.resolved }}</div>
         </div>
     </div>
 
     <div class="container">
-        {% if alerts %}
-        <div class="section-title">Recent Alerts</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Severity</th>
-                    <th>Status</th>
-                    <th>Source</th>
-                    <th>Created</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for alert in alerts %}
-                <tr>
-                    <td><code>{{ alert.id }}</code></td>
-                    <td>{{ alert.title }}</td>
-                    <td><span class="badge badge-{{ alert.severity.value }}">{{ alert.severity.value }}</span></td>
-                    <td><span class="badge badge-{{ alert.status.value }}">{{ alert.status.value }}</span></td>
-                    <td>{{ alert.source }}</td>
-                    <td>{{ alert.created_at[:19] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">
-            <p>No alerts yet. Create one with the API:</p>
-            <code>curl -X POST http://localhost:5000/alerts \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Test Alert", "severity": "high", "source": "curl"}'</code>
+        <div class="table-header">
+            <div class="section-title">Telemetry &amp; Security Incidents</div>
+            <button class="action-btn" onclick="window.location.reload()">⟳ Refresh</button>
         </div>
-        {% endif %}
+
+        <div class="table-wrapper">
+            {% if alerts %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Alert ID</th>
+                        <th>Incident Title</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Source</th>
+                        <th>Timestamp (UTC)</th>
+                        <th>Lifecycle Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alert in alerts %}
+                    <tr id="row-{{ alert.id }}">
+                        <td><span class="code-id">{{ alert.id }}</span></td>
+                        <td>
+                            <strong>{{ alert.title }}</strong>
+                            {% if alert.description %}
+                            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem;">{{ alert.description }}</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge-{{ alert.severity.value }}">{{ alert.severity.value }}</span></td>
+                        <td><span class="badge badge-{{ alert.status.value }}" id="status-badge-{{ alert.id }}">{{ alert.status.value }}</span></td>
+                        <td><code>{{ alert.source }}</code></td>
+                        <td>{{ alert.created_at[:19].replace('T', ' ') }}</td>
+                        <td id="actions-{{ alert.id }}">
+                            {% if alert.status.value == 'open' %}
+                            <button class="action-btn" onclick="acknowledgeAlert('{{ alert.id }}')">Acknowledge</button>
+                            <button class="action-btn resolve" onclick="resolveAlert('{{ alert.id }}')">Resolve</button>
+                            {% elif alert.status.value == 'acknowledged' %}
+                            <button class="action-btn resolve" onclick="resolveAlert('{{ alert.id }}')">Resolve</button>
+                            {% else %}
+                            <span style="color: var(--green); font-size: 0.8rem; font-weight: 600;">✓ Resolved</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No active incidents recorded. System telemetry healthy.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <div class="footer">
-        ARGUS v0.1.0 — Alert Response &amp; Guardian Unified System
+        ARGUS Enterprise v0.1.0 — Deployed on AWS EC2 (t3.micro) &bull; S3 Persistent Storage &bull; Nginx SSL &bull; Continuous Systemd Monitor
     </div>
+
+    <script>
+        async function resolveAlert(alertId) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerText = 'Resolving...';
+
+            try {
+                const res = await fetch('/alerts/' + alertId + '/resolve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res.ok) {
+                    const badge = document.getElementById('status-badge-' + alertId);
+                    if (badge) {
+                        badge.className = 'badge badge-resolved';
+                        badge.innerText = 'resolved';
+                    }
+                    const actionCell = document.getElementById('actions-' + alertId);
+                    if (actionCell) {
+                        actionCell.innerHTML = '<span style="color: var(--green); font-size: 0.8rem; font-weight: 600;">✓ Resolved</span>';
+                    }
+                    // Update counters in real time
+                    const openElem = document.getElementById('stat-open');
+                    const resElem = document.getElementById('stat-resolved');
+                    if (openElem && parseInt(openElem.innerText) > 0) {
+                        openElem.innerText = parseInt(openElem.innerText) - 1;
+                    }
+                    if (resElem) {
+                        resElem.innerText = parseInt(resElem.innerText) + 1;
+                    }
+                } else {
+                    alert('Failed to resolve alert: HTTP ' + res.status);
+                    btn.disabled = false;
+                    btn.innerText = 'Resolve';
+                }
+            } catch (err) {
+                alert('Network error: ' + err.message);
+                btn.disabled = false;
+                btn.innerText = 'Resolve';
+            }
+        }
+
+        async function acknowledgeAlert(alertId) {
+            const btn = event.target;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/alerts/' + alertId + '/acknowledge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (res.ok) {
+                    const badge = document.getElementById('status-badge-' + alertId);
+                    if (badge) {
+                        badge.className = 'badge badge-acknowledged';
+                        badge.innerText = 'acknowledged';
+                    }
+                    const actionCell = document.getElementById('actions-' + alertId);
+                    if (actionCell) {
+                        actionCell.innerHTML = '<button class="action-btn resolve" onclick="resolveAlert(\'' + alertId + '\')">Resolve</button>';
+                    }
+                } else {
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>

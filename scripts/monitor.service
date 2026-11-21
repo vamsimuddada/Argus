@@ -1,0 +1,18 @@
+[Unit]
+Description=ARGUS 24/7 Host Health & Security Telemetry Daemon
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/Argus
+ExecStart=/usr/bin/python3 /home/ec2-user/Argus/scripts/monitor.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=argus-monitor
+
+[Install]
+WantedBy=multi-user.target
